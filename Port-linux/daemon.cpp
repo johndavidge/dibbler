@@ -31,6 +31,8 @@ extern int run();
 
 using namespace std;
 
+char *CLNTPID_FILE = "/var/lib/dibbler/client.pid";
+
 /** 
  * checks if pid file exists, and returns its content (or -2 if unable to read)
  * 

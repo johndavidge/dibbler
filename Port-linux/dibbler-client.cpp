@@ -31,6 +31,10 @@ extern pthread_mutex_t lock;
 TDHCPClient * ptr;
 //static const char *TOOL_NAME = "ifplugstatus";
 
+char * workdir = NULL;
+char *CLNTCONF_FILE = "/etc/dibbler/client.conf";
+char *CLNTLOG_FILE = "/var/log/dibbler/dibbler-client.log";
+extern char *CLNTPID_FILE;
 
 void signal_handler(int n) {
     Log(Crit) << "Signal received. Shutting down." << LogEnd;
@@ -74,7 +78,7 @@ int status() {
 }
 
 int run() {
-    if (!init(CLNTPID_FILE, WORKDIR)) {
+    if (!init(CLNTPID_FILE, workdir)) {
 	die(CLNTPID_FILE);
 	return -1;
     }
@@ -118,7 +122,7 @@ int run() {
 
 int help() {
     cout << "Usage:" << endl;
-    cout << " dibbler-client ACTION" << endl
+    cout << " dibbler-client ACTION OPTION" << endl
 	 << " ACTION = status|start|stop|install|uninstall|run" << endl
 	 << " status    - show status and exit" << endl
 	 << " start     - start installed service" << endl
@@ -126,6 +130,8 @@ int help() {
 	 << " install   - Not available in Linux/Unix systems." << endl
 	 << " uninstall - Not available in Linux/Unix systems." << endl
 	 << " run       - run in the console" << endl
+         << " OPTION = -W <filepath>" << endl
+         << " -W <filepath> - specify the client's working directory." << endl
 	 << " help      - displays usage info." << endl;
     return 0;
 }
@@ -135,20 +141,47 @@ int main(int argc, char * argv[])
     char command[256];
     int result = -1;
 
-    logStart("(CLIENT, Linux port)", "Client", CLNTLOG_FILE);
-
     // parse command line parameters
+    memset(command,0,256);
     if (argc>1) {
 	int len = strlen(argv[1])+1;
-	if (len>255)
-	    len = 255;
-	strncpy(command,argv[1],len);
-    } else {
-	memset(command,0,256);
+        if (len>255)
+            len = 255;
+        strncpy(command,argv[1],len);
+        if (argc>2) {
+            if (strncasecmp(argv[2],"-W",2) ) {
+                memset(command,0,256);
+	        cout << "Unsupported option: " << argv[2] << endl;
+            } else
+            if (argc!=4) {
+                memset(command,0,256);
+	        cout << "Working Directory not provided or unrecognized options"  << endl;
+            } else {
+                len = strlen(argv[3]) + 1;
+                workdir = (char *) calloc(len, 1);
+                strncpy(workdir,argv[3],len);
+
+                len = strlen(workdir) + strlen("/client.pid") + 1;
+                CLNTPID_FILE = (char *) calloc(len, 1);
+                sprintf(CLNTPID_FILE, "%s/client.pid", workdir);
+
+                len = strlen(workdir) + strlen("/client.conf") + 1;
+                CLNTCONF_FILE = (char *) calloc(len, 1);
+                sprintf(CLNTCONF_FILE, "%s/client.conf", workdir);
+ 
+                len = strlen(workdir) + strlen("/client.log") + 1;
+                CLNTLOG_FILE = (char *) calloc(len, 1);
+                sprintf(CLNTLOG_FILE, "%s/client.log", workdir);
+            }
+        } else {
+            workdir = (char *) WORKDIR;
+        }
     }
 
+    logStart("(CLIENT, Linux port)", "Client", CLNTLOG_FILE);
+
     if (!strncasecmp(command,"start",5) ) {
-	result = start(CLNTPID_FILE, WORKDIR);
+	result = start(CLNTPID_FILE, workdir);
     } else
     if (!strncasecmp(command,"run",3) ) {
 	result = run();
@@ -176,6 +209,11 @@ int main(int argc, char * argv[])
 
     logEnd();
 
+    if (workdir && workdir!=(char *) WORKDIR) {
+        free(workdir);
+        free(CLNTPID_FILE);
+        free(CLNTCONF_FILE);
+    }
     return result? EXIT_FAILURE: EXIT_SUCCESS;
 }
 

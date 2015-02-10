@@ -60,7 +60,7 @@ extern "C" {
 }
 #endif
 
-#define DEFAULT_UMASK 027
+#define DEFAULT_UMASK 022
 
 /**********************************************************************/
 /*** data structures **************************************************/
@@ -147,16 +147,16 @@ struct link_state_notify_t
 #if defined(LINUX) || defined(BSD) || defined(SUNOS)
 #define WORKDIR            "/var/lib/dibbler"
 #define DEFAULT_SCRIPT     ""
-#define CLNTCONF_FILE      "/etc/dibbler/client.conf"
+extern char *CLNTCONF_FILE;
 #define SRVCONF_FILE       "/etc/dibbler/server.conf"
 #define RELCONF_FILE       "/etc/dibbler/relay.conf"
 #define RESOLVCONF_FILE    "/etc/resolv.conf"
 #define NTPCONF_FILE       "/etc/ntp.conf"
 #define RADVD_FILE         "/etc/dibbler/radvd.conf"
-#define CLNTPID_FILE       "/var/lib/dibbler/client.pid"
+extern char * CLNTPID_FILE;
 #define SRVPID_FILE        "/var/lib/dibbler/server.pid"
 #define RELPID_FILE        "/var/lib/dibbler/relay.pid"
-#define CLNTLOG_FILE       "/var/log/dibbler/dibbler-client.log"
+extern char * CLNTLOG_FILE;
 #define SRVLOG_FILE        "/var/log/dibbler/dibbler-server.log"
 #define RELLOG_FILE        "/var/log/dibbler/dibbler-relay.log"
 #define CLNT_AAASPI_FILE   "/var/lib/dibbler/AAA/AAA-SPI"
