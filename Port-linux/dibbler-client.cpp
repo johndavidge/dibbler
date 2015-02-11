@@ -32,9 +32,10 @@ TDHCPClient * ptr;
 //static const char *TOOL_NAME = "ifplugstatus";
 
 char * workdir = NULL;
-char *CLNTCONF_FILE = "/etc/dibbler/client.conf";
-char *CLNTLOG_FILE = "/var/log/dibbler/dibbler-client.log";
+char *CLNTCONF_FILE = (char*) "/etc/dibbler/client.conf";
+char *CLNTLOG_FILE = (char*) "/var/log/dibbler/dibbler-client.log";
 extern char *CLNTPID_FILE;
+char CLNT_LLAADDR[sizeof("0000:0000:0000:0000:0000:0000:0000.000.000.000.000")];
 
 void signal_handler(int n) {
     Log(Crit) << "Signal received. Shutting down." << LogEnd;
@@ -130,8 +131,9 @@ int help() {
 	 << " install   - Not available in Linux/Unix systems." << endl
 	 << " uninstall - Not available in Linux/Unix systems." << endl
 	 << " run       - run in the console" << endl
-         << " OPTION = -W <filepath>" << endl
+         << " OPTION = -W <filepath> -A <LLA_ADDR>" << endl
          << " -W <filepath> - specify the client's working directory." << endl
+         << " -A <LLA_ADDR> - specify the client's srouce LLA address." << endl
 	 << " help      - displays usage info." << endl;
     return 0;
 }
@@ -145,21 +147,21 @@ int main(int argc, char * argv[])
     memset(command,0,256);
     if (argc>1) {
 	int len = strlen(argv[1])+1;
+        int c;
         if (len>255)
             len = 255;
         strncpy(command,argv[1],len);
-        if (argc>2) {
-            if (strncasecmp(argv[2],"-W",2) ) {
-                memset(command,0,256);
-	        cout << "Unsupported option: " << argv[2] << endl;
-            } else
-            if (argc!=4) {
-                memset(command,0,256);
-	        cout << "Working Directory not provided or unrecognized options"  << endl;
-            } else {
-                len = strlen(argv[3]) + 1;
+
+        workdir = (char *) WORKDIR;
+        memset(CLNT_LLAADDR, 0, sizeof(CLNT_LLAADDR));
+
+        while ((c = getopt(argc-1, argv + 1, "W:A:")) != -1)
+          switch (c)
+            {
+            case 'W':
+                len = strlen(optarg) + 1;
                 workdir = (char *) calloc(len, 1);
-                strncpy(workdir,argv[3],len);
+                strncpy(workdir,optarg,len);
 
                 len = strlen(workdir) + strlen("/client.pid") + 1;
                 CLNTPID_FILE = (char *) calloc(len, 1);
@@ -172,10 +174,14 @@ int main(int argc, char * argv[])
                 len = strlen(workdir) + strlen("/client.log") + 1;
                 CLNTLOG_FILE = (char *) calloc(len, 1);
                 sprintf(CLNTLOG_FILE, "%s/client.log", workdir);
+                break;
+            case 'A':
+                strcpy(CLNT_LLAADDR, optarg);
+                break;
+            default:
+                help();
+                return EXIT_FAILURE;
             }
-        } else {
-            workdir = (char *) WORKDIR;
-        }
     }
 
     logStart("(CLIENT, Linux port)", "Client", CLNTLOG_FILE);
